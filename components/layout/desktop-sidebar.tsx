@@ -13,7 +13,7 @@ const navItems = [
 ]
 
 export function DesktopSidebar() {
-  const { user, logout } = useAuth()
+  const { logout } = useAuth()
   const { theme, setTheme } = useTheme()
   const pathname = usePathname()
 
@@ -60,14 +60,11 @@ export function DesktopSidebar() {
       <div className="border-t border-sidebar-border p-4">
         <div className="mb-3 flex items-center gap-3 px-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sidebar-accent text-sidebar-accent-foreground text-sm font-bold">
-            {user?.first_name?.[0] || user?.email?.[0]?.toUpperCase() || "م"}
+            م
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-sidebar-foreground truncate">
-              {user?.first_name ? `${user.first_name} ${user.last_name || ""}` : user?.email}
-            </p>
-            <p className="text-xs text-sidebar-foreground/60 truncate">
-              {user?.email}
+              المستخدم
             </p>
           </div>
         </div>

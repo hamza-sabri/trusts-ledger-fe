@@ -47,7 +47,7 @@ export function DeleteConfirmModal({
           <AlertDialogDescription className="text-sm leading-relaxed">
             {"هل أنت متأكد من حذف أمانة"}{" "}
             <span className="font-semibold text-foreground">
-              {trust?.person_name}
+              {trust?.person.name}
             </span>
             {"؟"} {"لا يمكن التراجع عن هذا الإجراء."}
           </AlertDialogDescription>

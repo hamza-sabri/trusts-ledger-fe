@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, useCallback } from "react"
+import { useCurrencies } from "@/lib/api/trusts"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -29,6 +30,7 @@ export function FiltersPanel({ filters, onFiltersChange }: FiltersPanelProps) {
   const [isOpen, setIsOpen] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
   const debounceTimer = useRef<NodeJS.Timeout | null>(null)
+  const { data: currencies } = useCurrencies()
 
   useEffect(() => {
     if (panelRef.current) {
@@ -142,9 +144,11 @@ export function FiltersPanel({ filters, onFiltersChange }: FiltersPanelProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">جميع العملات</SelectItem>
-                <SelectItem value="USD">دولار أمريكي</SelectItem>
-                <SelectItem value="EUR">يورو</SelectItem>
-                <SelectItem value="NIS">شيكل</SelectItem>
+                {currencies?.map((c) => (
+                  <SelectItem key={c.id} value={c.code}>
+                    {c.name} ({c.code})
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

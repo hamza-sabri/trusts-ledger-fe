@@ -1,12 +1,10 @@
 "use client"
 
-import { useAuth } from "@/lib/auth/auth-context"
 import { useTheme } from "next-themes"
 import { Moon, Sun, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export function MobileHeader() {
-  const { user } = useAuth()
   const { theme, setTheme } = useTheme()
 
   return (
@@ -32,7 +30,7 @@ export function MobileHeader() {
           <span className="sr-only">تبديل السمة</span>
         </Button>
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">
-          {user?.first_name?.[0] || user?.email?.[0]?.toUpperCase() || "م"}
+          م
         </div>
       </div>
     </header>

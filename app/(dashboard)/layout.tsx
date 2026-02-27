@@ -10,14 +10,14 @@ import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 
 function DashboardGuard({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth()
+  const { token, isLoading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!isLoading && !token) {
       router.push("/login")
     }
-  }, [isLoading, user, router])
+  }, [isLoading, token, router])
 
   if (isLoading) {
     return (
@@ -30,7 +30,7 @@ function DashboardGuard({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (!user) return null
+  if (!token) return null
 
   return (
     <div className="flex min-h-dvh bg-background">

@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import Link from "next/link"
 import { useAuth } from "@/lib/auth/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,7 +11,7 @@ import gsap from "gsap"
 
 export default function LoginPage() {
   const { login } = useAuth()
-  const [email, setEmail] = useState("")
+  const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
@@ -34,7 +33,7 @@ export default function LoginPage() {
     setError("")
     setIsLoading(true)
     try {
-      await login(email, password)
+      await login(username, password)
     } catch (err) {
       setError(err instanceof Error ? err.message : "فشل تسجيل الدخول")
     } finally {
@@ -54,7 +53,7 @@ export default function LoginPage() {
               تسجيل الدخول
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              أدخل بياناتك للوصول إلى سجل الأمانات
+              أدخل اسم المستخدم وكلمة المرور للوصول إلى سجل الأمانات
             </p>
           </CardHeader>
           <CardContent className="pt-4">
@@ -65,17 +64,17 @@ export default function LoginPage() {
                 </div>
               )}
               <div className="flex flex-col gap-2">
-                <Label htmlFor="email">البريد الإلكتروني</Label>
+                <Label htmlFor="username">اسم المستخدم</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="example@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="username"
+                  type="text"
+                  placeholder="اسم المستخدم"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   required
                   className="h-12 rounded-xl text-base"
                   dir="ltr"
-                  autoComplete="email"
+                  autoComplete="username"
                 />
               </div>
               <div className="flex flex-col gap-2">
@@ -114,14 +113,8 @@ export default function LoginPage() {
                 )}
               </Button>
             </form>
-            <p className="mt-6 text-center text-sm text-muted-foreground">
-              {"ليس لديك حساب؟"}{" "}
-              <Link
-                href="/signup"
-                className="font-semibold text-primary hover:underline"
-              >
-                إنشاء حساب جديد
-              </Link>
+            <p className="mt-6 text-center text-xs text-muted-foreground">
+              {"تواصل مع المسؤول إذا لم يكن لديك حساب"}
             </p>
           </CardContent>
         </Card>

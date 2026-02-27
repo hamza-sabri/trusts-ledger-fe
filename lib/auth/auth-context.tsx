@@ -8,20 +8,12 @@ import {
   useCallback,
 } from "react"
 import { useRouter } from "next/navigation"
-
-interface User {
-  id: number
-  email: string
-  first_name?: string
-  last_name?: string
-}
+import type { LoginResponse } from "@/lib/api/types"
 
 interface AuthContextType {
-  user: User | null
   token: string | null
   isLoading: boolean
-  login: (email: string, password: string) => Promise<void>
-  signup: (email: string, password: string, firstName?: string, lastName?: string) => Promise<void>
+  login: (username: string, password: string) => Promise<void>
   logout: () => void
 }
 
@@ -30,7 +22,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://trusts-ledger.clinixa.cloud"
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
@@ -39,94 +30,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedToken = getCookie("auth_token")
     if (storedToken) {
       setToken(storedToken)
-      fetchUser(storedToken)
-    } else {
-      setIsLoading(false)
     }
+    setIsLoading(false)
   }, [])
 
-  const fetchUser = async (jwt: string) => {
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/user/`, {
-        headers: { Authorization: `Bearer ${jwt}` },
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setUser(data)
-      } else {
-        removeCookie("auth_token")
-        setToken(null)
-      }
-    } catch {
-      removeCookie("auth_token")
-      setToken(null)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await fetch(`${API_BASE}/api/auth/login/`, {
+  const login = useCallback(async (username: string, password: string) => {
+    const res = await fetch(`${API_BASE}/api/login/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ username, password }),
     })
     if (!res.ok) {
       const errorData = await res.json().catch(() => null)
-      throw new Error(errorData?.detail || errorData?.non_field_errors?.[0] || "فشل تسجيل الدخول")
-    }
-    const data = await res.json()
-    const jwt = data.access || data.token || data.key
-    if (!jwt) throw new Error("لم يتم استلام رمز المصادقة")
-    setCookie("auth_token", jwt, 7)
-    setToken(jwt)
-    await fetchUser(jwt)
-    router.push("/dashboard")
-  }, [router])
-
-  const signup = useCallback(async (email: string, password: string, firstName?: string, lastName?: string) => {
-    const res = await fetch(`${API_BASE}/api/auth/registration/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        password1: password,
-        password2: password,
-        first_name: firstName,
-        last_name: lastName,
-      }),
-    })
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => null)
-      const errorMsg =
-        errorData?.email?.[0] ||
-        errorData?.password1?.[0] ||
-        errorData?.non_field_errors?.[0] ||
+      throw new Error(
         errorData?.detail ||
-        "فشل إنشاء الحساب"
-      throw new Error(errorMsg)
+        errorData?.non_field_errors?.[0] ||
+        errorData?.username?.[0] ||
+        errorData?.password?.[0] ||
+        "فشل تسجيل الدخول"
+      )
     }
-    const data = await res.json()
-    const jwt = data.access || data.token || data.key
-    if (jwt) {
-      setCookie("auth_token", jwt, 7)
-      setToken(jwt)
-      await fetchUser(jwt)
-      router.push("/dashboard")
-    } else {
-      router.push("/login")
-    }
+    const data: LoginResponse = await res.json()
+    const jwt = data.access_token
+    if (!jwt) throw new Error("لم يتم استلام رمز المصادقة")
+
+    // Calculate expiry days from expires_in (seconds)
+    const expiryDays = Math.max(1, Math.floor(data.expires_in / 86400))
+    setCookie("auth_token", jwt, expiryDays)
+    setToken(jwt)
+    router.push("/dashboard")
   }, [router])
 
   const logout = useCallback(() => {
     removeCookie("auth_token")
     setToken(null)
-    setUser(null)
     router.push("/login")
   }, [router])
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, signup, logout }}>
+    <AuthContext.Provider value={{ token, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   )

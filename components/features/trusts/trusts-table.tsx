@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useEffect } from "react"
-import { useTrusts, useUpdateTrust, useDeleteTrust } from "@/lib/api/trusts"
+import { useTrusts, useUpdateTrust } from "@/lib/api/trusts"
 import type { Trust, TrustStatus } from "@/lib/api/types"
 import {
   Table,
@@ -36,11 +36,7 @@ export function TrustsTable({ filters, onEdit, onDelete }: TrustsTableProps) {
   const updateTrust = useUpdateTrust()
   const rowsRef = useRef<HTMLTableSectionElement>(null)
 
-  const trusts: Trust[] = Array.isArray(data)
-    ? data
-    : data && "results" in data
-    ? data.results
-    : []
+  const trusts: Trust[] = data?.results ?? []
 
   useEffect(() => {
     if (trusts.length > 0 && rowsRef.current) {
@@ -161,11 +157,18 @@ export function TrustsTable({ filters, onEdit, onDelete }: TrustsTableProps) {
           <TableBody ref={rowsRef}>
             {trusts.map((trust) => (
               <TableRow key={trust.id} className="group">
-                <TableCell className="font-medium">{trust.person_name}</TableCell>
+                <TableCell className="font-medium">
+                  {trust.person.name}
+                  {trust.person.phone && (
+                    <span className="text-xs text-muted-foreground mr-2" dir="ltr">
+                      {trust.person.phone}
+                    </span>
+                  )}
+                </TableCell>
                 <TableCell className="tabular-nums" dir="ltr">
                   {formatAmount(trust.amount)}
                 </TableCell>
-                <TableCell>{trust.currency}</TableCell>
+                <TableCell>{trust.currency.code}</TableCell>
                 <TableCell>
                   <Select
                     value={trust.status}
@@ -224,7 +227,9 @@ export function TrustsTable({ filters, onEdit, onDelete }: TrustsTableProps) {
           >
             <div className="flex items-start justify-between mb-3">
               <div>
-                <p className="font-semibold text-card-foreground">{trust.person_name}</p>
+                <p className="font-semibold text-card-foreground">
+                  {trust.person.name}
+                </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {formatDate(trust.created_at)}
                 </p>
@@ -233,10 +238,15 @@ export function TrustsTable({ filters, onEdit, onDelete }: TrustsTableProps) {
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-lg font-bold text-card-foreground tabular-nums" dir="ltr">
+                <span
+                  className="text-lg font-bold text-card-foreground tabular-nums"
+                  dir="ltr"
+                >
                   {formatAmount(trust.amount)}
                 </span>
-                <span className="text-xs text-muted-foreground">{trust.currency}</span>
+                <span className="text-xs text-muted-foreground">
+                  {trust.currency.code}
+                </span>
               </div>
               <div className="flex items-center gap-1">
                 <Button
