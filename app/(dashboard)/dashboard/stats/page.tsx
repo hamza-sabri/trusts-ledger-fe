@@ -1,21 +1,38 @@
 "use client"
 
-import { useTrusts, useTrustsSummary } from "@/lib/api/hooks"
+import { useTrusts } from "@/lib/api/hooks"
 import { CurrencyDonutChart } from "@/components/features/trusts/currency-chart"
 import { Card, CardContent } from "@/components/ui/card"
 import { TrendingUp, Coins, CheckCircle2, Clock, XCircle, RotateCcw } from "lucide-react"
+import { useMemo } from "react"
 
 export default function StatsPage() {
   const { data: trustsData, isLoading: trustsLoading } = useTrusts()
-  const { data: summaryData, isLoading: summaryLoading } = useTrustsSummary()
 
-  const isLoading = trustsLoading || summaryLoading
+  const isLoading = trustsLoading
 
   const totalTrusts = trustsData?.count ?? 0
-  const totalCurrencies = summaryData?.totals?.length ?? 0
+  const trusts = trustsData?.results ?? []
+
+  // Compute currency totals from all trusts (regardless of status)
+  const currencyTotals = useMemo(() => {
+    const map = new Map<string, { code: string; name: string; total: number }>()
+    for (const trust of trusts) {
+      const code = trust.currency.code
+      const existing = map.get(code)
+      const amount = parseFloat(trust.amount) || 0
+      if (existing) {
+        existing.total += amount
+      } else {
+        map.set(code, { code, name: trust.currency.name, total: amount })
+      }
+    }
+    return Array.from(map.values())
+  }, [trusts])
+
+  const totalCurrencies = currencyTotals.length
 
   // Count trusts by status from current page results
-  const trusts = trustsData?.results ?? []
   const activeTrusts = trusts.filter((t) => t.status === "active").length
   const pendingTrusts = trusts.filter((t) => t.status === "pending").length
   const returnedTrusts = trusts.filter((t) => t.status === "returned").length
@@ -116,11 +133,11 @@ export default function StatsPage() {
           animationDelay: "300ms",
         }}
       >
-        <CurrencyDonutChart />
+        <CurrencyDonutChart trusts={trusts} isLoading={trustsLoading} />
       </div>
 
       {/* Summary Table */}
-      {summaryData && summaryData.totals.length > 0 && (
+      {currencyTotals.length > 0 && (
         <Card
           className="rounded-2xl border-border/50 shadow-sm overflow-hidden"
           style={{
@@ -135,33 +152,30 @@ export default function StatsPage() {
               </p>
             </div>
             <div className="divide-y divide-border/30">
-              {summaryData.totals.map((item) => {
-                const total = parseFloat(item.total) || 0
-                return (
-                  <div
-                    key={item.currency_code}
-                    className="flex items-center justify-between px-5 py-3.5 hover:bg-muted/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-muted-foreground font-mono w-10">
-                        {item.currency_code}
-                      </span>
-                      <span className="text-sm text-foreground">
-                        {item.currency_name}
-                      </span>
-                    </div>
-                    <span
-                      className="text-sm font-bold text-foreground tabular-nums"
-                      dir="ltr"
-                    >
-                      {total.toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+              {currencyTotals.map((item) => (
+                <div
+                  key={item.code}
+                  className="flex items-center justify-between px-5 py-3.5 hover:bg-muted/20 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground font-mono w-10">
+                      {item.code}
+                    </span>
+                    <span className="text-sm text-foreground">
+                      {item.name}
                     </span>
                   </div>
-                )
-              })}
+                  <span
+                    className="text-sm font-bold text-foreground tabular-nums"
+                    dir="ltr"
+                  >
+                    {item.total.toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

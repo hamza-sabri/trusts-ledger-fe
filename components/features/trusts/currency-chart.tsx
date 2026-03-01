@@ -1,6 +1,6 @@
 "use client"
 
-import { useTrustsSummary } from "@/lib/api/hooks"
+import type { Trust } from "@/lib/api/generated/model"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   ChartContainer,
@@ -17,10 +17,12 @@ const CHART_COLORS = [
   "var(--chart-5)",
 ]
 
-export function CurrencyDonutChart() {
-  const { data, isLoading, isError } = useTrustsSummary()
-  const totals = data?.totals ?? []
+interface CurrencyDonutChartProps {
+  trusts?: Trust[]
+  isLoading?: boolean
+}
 
+export function CurrencyDonutChart({ trusts, isLoading }: CurrencyDonutChartProps) {
   if (isLoading) {
     return (
       <Card className="rounded-2xl border-border/50 shadow-sm">
@@ -34,7 +36,7 @@ export function CurrencyDonutChart() {
     )
   }
 
-  if (isError || !data || totals.length === 0) {
+  if (!trusts || trusts.length === 0) {
     return (
       <Card className="rounded-2xl border-border/50 shadow-sm">
         <CardContent className="flex flex-col items-center justify-center p-12 text-center">
@@ -66,18 +68,30 @@ export function CurrencyDonutChart() {
     )
   }
 
-  const grandTotal = totals.reduce(
-    (sum, item) => sum + (parseFloat(item.total) || 0),
+  // Aggregate totals per currency from all trusts (regardless of status)
+  const currencyMap = new Map<string, { name: string; total: number }>()
+  for (const trust of trusts) {
+    const code = trust.currency.code
+    const existing = currencyMap.get(code)
+    const amount = parseFloat(trust.amount) || 0
+    if (existing) {
+      existing.total += amount
+    } else {
+      currencyMap.set(code, { name: trust.currency.name, total: amount })
+    }
+  }
+
+  const grandTotal = Array.from(currencyMap.values()).reduce(
+    (sum, item) => sum + item.total,
     0
   )
 
-  const chartData = totals.map((item, i) => {
-    const value = parseFloat(item.total) || 0
-    const pct = grandTotal > 0 ? ((value / grandTotal) * 100) : 0
+  const chartData = Array.from(currencyMap.entries()).map(([code, item], i) => {
+    const pct = grandTotal > 0 ? ((item.total / grandTotal) * 100) : 0
     return {
-      currency: item.currency_code,
-      name: item.currency_name,
-      value,
+      currency: code,
+      name: item.name,
+      value: item.total,
       percentage: pct,
       fill: CHART_COLORS[i % CHART_COLORS.length],
     }
