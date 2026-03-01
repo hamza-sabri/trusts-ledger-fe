@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next'
 import { Montserrat, Noto_Sans_Arabic } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/providers/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
@@ -53,7 +52,6 @@ export default function RootLayout({
           {children}
           <Toaster position="top-center" dir="rtl" />
         </ThemeProvider>
-        <Analytics />
       </body>
     </html>
   )
