@@ -1,13 +1,14 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 import {
   useCreateTrustWithPerson,
   useUpdateTrust,
   useCurrencies,
   usePersons,
-} from "@/lib/api/trusts"
-import type { Trust, TrustStatus } from "@/lib/api/types"
+} from "@/lib/api/hooks"
+import type { Trust, Person } from "@/lib/api/generated/model"
+import type { StatusEnum } from "@/lib/api/generated/model"
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
 import {
   Select,
   SelectContent,
@@ -25,71 +27,99 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Loader2 } from "lucide-react"
+import { Loader2, User, UserPlus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
-import gsap from "gsap"
+import { cn } from "@/lib/utils"
 
 interface TrustFormModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   trust?: Trust | null
+  onDelete?: (trust: Trust) => void
 }
 
 export function TrustFormModal({
   open,
   onOpenChange,
   trust,
+  onDelete,
 }: TrustFormModalProps) {
   const isEditing = !!trust
   const createTrust = useCreateTrustWithPerson()
   const updateTrust = useUpdateTrust()
   const { data: currencies } = useCurrencies()
-  const formRef = useRef<HTMLFormElement>(null)
 
-  // Person mode: "existing" or "new"
-  const [personMode, setPersonMode] = useState<"existing" | "new">("new")
-  const [personSearch, setPersonSearch] = useState("")
-  const { data: persons } = usePersons(personSearch)
+  // Unified person search state
+  const [personName, setPersonName] = useState("")
+  const [personPhone, setPersonPhone] = useState("")
+  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null)
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const debounceRef = useRef<NodeJS.Timeout | null>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const [selectedPersonId, setSelectedPersonId] = useState<string>("")
-  const [newPersonName, setNewPersonName] = useState("")
-  const [newPersonPhone, setNewPersonPhone] = useState("")
+  const { data: persons } = usePersons(debouncedSearch || undefined)
+
   const [amount, setAmount] = useState("")
   const [currencyId, setCurrencyId] = useState<string>("")
-  const [status, setStatus] = useState<TrustStatus>("active")
+  const [status, setStatus] = useState<StatusEnum>("active")
   const [notes, setNotes] = useState("")
+
+  // Debounced person search
+  const handlePersonNameChange = useCallback((value: string) => {
+    setPersonName(value)
+    setSelectedPerson(null) // Clear selection when typing
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (value.trim().length >= 1) {
+      debounceRef.current = setTimeout(() => {
+        setDebouncedSearch(value.trim())
+        setShowDropdown(true)
+      }, 300)
+    } else {
+      setDebouncedSearch("")
+      setShowDropdown(false)
+    }
+  }, [])
+
+  const handleSelectPerson = useCallback((person: Person) => {
+    setSelectedPerson(person)
+    setPersonName(person.name)
+    setPersonPhone(person.phone || "")
+    setShowDropdown(false)
+  }, [])
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   useEffect(() => {
     if (trust) {
-      setPersonMode("existing")
-      setSelectedPersonId(String(trust.person.id))
-      setNewPersonName("")
-      setNewPersonPhone("")
+      setPersonName(trust.person.name)
+      setPersonPhone(trust.person.phone || "")
+      setSelectedPerson(trust.person)
       setAmount(trust.amount)
       setCurrencyId(String(trust.currency.id))
       setStatus(trust.status)
       setNotes(trust.notes || "")
     } else {
-      setPersonMode("new")
-      setSelectedPersonId("")
-      setNewPersonName("")
-      setNewPersonPhone("")
+      setPersonName("")
+      setPersonPhone("")
+      setSelectedPerson(null)
+      setDebouncedSearch("")
+      setShowDropdown(false)
       setAmount("")
       setCurrencyId(currencies?.[0]?.id ? String(currencies[0].id) : "")
       setStatus("active")
       setNotes("")
     }
   }, [trust, open, currencies])
-
-  useEffect(() => {
-    if (open && formRef.current) {
-      gsap.fromTo(
-        formRef.current,
-        { opacity: 0, y: 10 },
-        { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }
-      )
-    }
-  }, [open])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -99,7 +129,7 @@ export function TrustFormModal({
         await updateTrust.mutateAsync({
           id: trust.id,
           data: {
-            person_id: selectedPersonId ? Number(selectedPersonId) : undefined,
+            person_id: selectedPerson ? selectedPerson.id : undefined,
             amount,
             currency_id: Number(currencyId),
             status,
@@ -108,21 +138,22 @@ export function TrustFormModal({
         })
         toast.success("تم تحديث الأمانة بنجاح")
       } else {
-        // Create with inline person support
-        if (personMode === "new") {
+        if (selectedPerson) {
+          // Existing person selected
           await createTrust.mutateAsync({
-            person: {
-              name: newPersonName,
-              phone: newPersonPhone || undefined,
-            },
+            person_id: selectedPerson.id,
             amount,
             currency_id: Number(currencyId),
             status,
             notes: notes || undefined,
           })
         } else {
+          // New person
           await createTrust.mutateAsync({
-            person_id: Number(selectedPersonId),
+            person: {
+              name: personName,
+              phone: personPhone || undefined,
+            },
             amount,
             currency_id: Number(currencyId),
             status,
@@ -138,6 +169,7 @@ export function TrustFormModal({
   }
 
   const isSubmitting = createTrust.isPending || updateTrust.isPending
+  const isNewPerson = personName.trim().length > 0 && !selectedPerson
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -148,100 +180,93 @@ export function TrustFormModal({
           </DialogTitle>
         </DialogHeader>
         <form
-          ref={formRef}
           onSubmit={handleSubmit}
           className="flex flex-col gap-4 mt-2"
         >
-          {/* Person Section */}
-          {!isEditing && (
+          {/* Person Section — Unified Search */}
+          {!isEditing ? (
             <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant={personMode === "new" ? "default" : "outline"}
-                  size="sm"
-                  className="rounded-lg text-xs"
-                  onClick={() => setPersonMode("new")}
-                >
-                  شخص جديد
-                </Button>
-                <Button
-                  type="button"
-                  variant={personMode === "existing" ? "default" : "outline"}
-                  size="sm"
-                  className="rounded-lg text-xs"
-                  onClick={() => setPersonMode("existing")}
-                >
-                  شخص موجود
-                </Button>
-              </div>
-
-              {personMode === "new" ? (
-                <div className="flex flex-col gap-3">
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="newPersonName">اسم الشخص</Label>
-                    <Input
-                      id="newPersonName"
-                      value={newPersonName}
-                      onChange={(e) => setNewPersonName(e.target.value)}
-                      placeholder="أدخل اسم الشخص"
-                      required
-                      className="h-11 rounded-xl"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="newPersonPhone">
-                      {"رقم الهاتف "}
-                      <span className="text-muted-foreground text-xs">
-                        {"(اختياري)"}
-                      </span>
-                    </Label>
-                    <Input
-                      id="newPersonPhone"
-                      value={newPersonPhone}
-                      onChange={(e) => setNewPersonPhone(e.target.value)}
-                      placeholder="+962791234567"
-                      className="h-11 rounded-xl"
-                      dir="ltr"
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  <Label>اختر شخص</Label>
-                  <Input
-                    placeholder="ابحث عن شخص..."
-                    value={personSearch}
-                    onChange={(e) => setPersonSearch(e.target.value)}
-                    className="h-10 rounded-xl text-sm mb-1"
-                  />
-                  <Select
-                    value={selectedPersonId}
-                    onValueChange={setSelectedPersonId}
-                  >
-                    <SelectTrigger className="h-11 rounded-xl">
-                      <SelectValue placeholder="اختر شخص" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {persons?.map((p) => (
-                        <SelectItem key={p.id} value={String(p.id)}>
-                          {p.name}
-                          {p.phone ? ` (${p.phone})` : ""}
-                        </SelectItem>
-                      ))}
-                      {(!persons || persons.length === 0) && (
-                        <div className="px-2 py-3 text-center text-sm text-muted-foreground">
-                          لا توجد نتائج
-                        </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="personName">اسم الشخص</Label>
+                  {personName.trim().length > 0 && (
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "text-[10px] px-2 py-0.5 rounded-md font-medium gap-1",
+                        selectedPerson
+                          ? "bg-primary/10 text-primary border-primary/20"
+                          : "bg-accent/50 text-accent-foreground border-accent-foreground/20"
                       )}
-                    </SelectContent>
-                  </Select>
+                    >
+                      {selectedPerson ? (
+                        <>
+                          <User className="h-3 w-3" />
+                          شخص موجود
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="h-3 w-3" />
+                          شخص جديد
+                        </>
+                      )}
+                    </Badge>
+                  )}
                 </div>
-              )}
+                <div className="relative" ref={dropdownRef}>
+                  <Input
+                    id="personName"
+                    value={personName}
+                    onChange={(e) => handlePersonNameChange(e.target.value)}
+                    onFocus={() => {
+                      if (debouncedSearch && !selectedPerson) setShowDropdown(true)
+                    }}
+                    placeholder="اكتب اسم الشخص للبحث أو إضافة جديد..."
+                    required
+                    className="h-11 rounded-xl"
+                    autoComplete="off"
+                  />
+                  {/* Autocomplete dropdown */}
+                  {showDropdown && persons && persons.length > 0 && (
+                    <div className="absolute z-50 top-full mt-1 w-full rounded-xl border border-border/60 bg-popover shadow-lg overflow-hidden animate-scale-fade-in">
+                      <div className="max-h-40 overflow-y-auto py-1">
+                        {persons.map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => handleSelectPerson(p)}
+                            className="w-full flex items-center justify-between px-3 py-2.5 text-sm hover:bg-muted/50 transition-colors text-start"
+                          >
+                            <span className="font-medium text-foreground">{p.name}</span>
+                            {p.phone && (
+                              <span className="text-xs text-muted-foreground" dir="ltr">
+                                {p.phone}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="personPhone">
+                  {"رقم الهاتف "}
+                  <span className="text-muted-foreground text-xs">
+                    {"(اختياري)"}
+                  </span>
+                </Label>
+                <Input
+                  id="personPhone"
+                  value={personPhone}
+                  onChange={(e) => setPersonPhone(e.target.value)}
+                  placeholder="+962791234567"
+                  className="h-11 rounded-xl"
+                />
+              </div>
             </div>
-          )}
-
-          {isEditing && (
+          ) : (
             <div className="flex flex-col gap-2">
               <Label>الشخص</Label>
               <div className="h-11 rounded-xl bg-muted/50 border border-input flex items-center px-3 text-sm text-muted-foreground">
@@ -288,7 +313,7 @@ export function TrustFormModal({
             <Label>الحالة</Label>
             <Select
               value={status}
-              onValueChange={(v) => setStatus(v as TrustStatus)}
+              onValueChange={(v) => setStatus(v as StatusEnum)}
             >
               <SelectTrigger className="h-11 rounded-xl">
                 <SelectValue />
@@ -313,28 +338,44 @@ export function TrustFormModal({
             />
           </div>
 
-          <div className="flex gap-3 mt-2">
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1 h-11 rounded-xl font-semibold"
-            >
-              {isSubmitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : isEditing ? (
-                "حفظ التعديلات"
-              ) : (
-                "إضافة الأمانة"
-              )}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="h-11 rounded-xl"
-            >
-              إلغاء
-            </Button>
+          <div className="flex flex-col gap-3 mt-2">
+            <div className="flex gap-3">
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1 h-11 rounded-xl font-semibold"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : isEditing ? (
+                  "حفظ التعديلات"
+                ) : (
+                  "إضافة الأمانة"
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                className="h-11 rounded-xl"
+              >
+                إلغاء
+              </Button>
+            </div>
+            {isEditing && trust && onDelete && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  onOpenChange(false)
+                  onDelete(trust)
+                }}
+                className="h-10 rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 text-sm"
+              >
+                <Trash2 className="h-4 w-4" />
+                حذف هذه الأمانة
+              </Button>
+            )}
           </div>
         </form>
       </DialogContent>

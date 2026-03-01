@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useRef, useState, useCallback } from "react"
-import { useCurrencies } from "@/lib/api/trusts"
+import { useState, useRef, useCallback } from "react"
+import { useCurrencies } from "@/lib/api/hooks"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,7 +13,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { SlidersHorizontal, X, Search } from "lucide-react"
-import gsap from "gsap"
 
 interface Filters {
   status: string
@@ -27,29 +26,9 @@ interface FiltersPanelProps {
 }
 
 export function FiltersPanel({ filters, onFiltersChange }: FiltersPanelProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const panelRef = useRef<HTMLDivElement>(null)
+  const [isOpen, setIsOpen] = useState(true)
   const debounceTimer = useRef<NodeJS.Timeout | null>(null)
   const { data: currencies } = useCurrencies()
-
-  useEffect(() => {
-    if (panelRef.current) {
-      if (isOpen) {
-        gsap.fromTo(
-          panelRef.current,
-          { height: 0, opacity: 0 },
-          { height: "auto", opacity: 1, duration: 0.35, ease: "power2.out" }
-        )
-      } else {
-        gsap.to(panelRef.current, {
-          height: 0,
-          opacity: 0,
-          duration: 0.25,
-          ease: "power2.in",
-        })
-      }
-    }
-  }, [isOpen])
 
   const handleSearchChange = useCallback(
     (value: string) => {
@@ -74,7 +53,7 @@ export function FiltersPanel({ filters, onFiltersChange }: FiltersPanelProps) {
           variant="outline"
           size="sm"
           onClick={() => setIsOpen(!isOpen)}
-          className="rounded-xl gap-2"
+          className="rounded-xl gap-2 border-border/60"
         >
           <SlidersHorizontal className="h-4 w-4" />
           الفلاتر
@@ -97,60 +76,66 @@ export function FiltersPanel({ filters, onFiltersChange }: FiltersPanelProps) {
         )}
       </div>
 
-      <div ref={panelRef} className="overflow-hidden" style={{ height: 0, opacity: 0 }}>
-        <div className="grid grid-cols-1 gap-3 rounded-2xl border border-border bg-card p-4 sm:grid-cols-3">
-          <div className="flex flex-col gap-2">
-            <Label className="text-xs text-muted-foreground">بحث بالاسم</Label>
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="اكتب اسم الشخص..."
-                defaultValue={filters.search}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="h-10 rounded-xl pr-9 text-sm"
-              />
+      {/* CSS grid-rows transition for smooth collapse */}
+      <div
+        className="grid transition-[grid-template-rows] duration-300 ease-out"
+        style={{ gridTemplateRows: isOpen ? "1fr" : "0fr" }}
+      >
+        <div className="overflow-hidden">
+          <div className="grid grid-cols-1 gap-3 rounded-2xl border border-border/50 bg-card p-4 sm:grid-cols-3 shadow-sm">
+            <div className="flex flex-col gap-2">
+              <Label className="text-xs text-muted-foreground">بحث بالاسم</Label>
+              <div className="relative">
+                <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  placeholder="اكتب اسم الشخص..."
+                  defaultValue={filters.search}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  className="h-10 rounded-xl pe-9 text-sm border-border/60 focus:border-primary"
+                />
+              </div>
             </div>
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label className="text-xs text-muted-foreground">الحالة</Label>
-            <Select
-              value={filters.status || "all"}
-              onValueChange={(v) =>
-                onFiltersChange({ ...filters, status: v === "all" ? "" : v })
-              }
-            >
-              <SelectTrigger className="h-10 rounded-xl text-sm">
-                <SelectValue placeholder="جميع الحالات" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">جميع الحالات</SelectItem>
-                <SelectItem value="active">نشط</SelectItem>
-                <SelectItem value="returned">مُرجع</SelectItem>
-                <SelectItem value="pending">معلّق</SelectItem>
-                <SelectItem value="cancelled">ملغي</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label className="text-xs text-muted-foreground">العملة</Label>
-            <Select
-              value={filters.currency || "all"}
-              onValueChange={(v) =>
-                onFiltersChange({ ...filters, currency: v === "all" ? "" : v })
-              }
-            >
-              <SelectTrigger className="h-10 rounded-xl text-sm">
-                <SelectValue placeholder="جميع العملات" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">جميع العملات</SelectItem>
-                {currencies?.map((c) => (
-                  <SelectItem key={c.id} value={c.code}>
-                    {c.name} ({c.code})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-2">
+              <Label className="text-xs text-muted-foreground">الحالة</Label>
+              <Select
+                value={filters.status || "all"}
+                onValueChange={(v) =>
+                  onFiltersChange({ ...filters, status: v === "all" ? "" : v })
+                }
+              >
+                <SelectTrigger className="h-10 rounded-xl text-sm">
+                  <SelectValue placeholder="جميع الحالات" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع الحالات</SelectItem>
+                  <SelectItem value="active">نشط</SelectItem>
+                  <SelectItem value="returned">مُرجع</SelectItem>
+                  <SelectItem value="pending">معلّق</SelectItem>
+                  <SelectItem value="cancelled">ملغي</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label className="text-xs text-muted-foreground">العملة</Label>
+              <Select
+                value={filters.currency || "all"}
+                onValueChange={(v) =>
+                  onFiltersChange({ ...filters, currency: v === "all" ? "" : v })
+                }
+              >
+                <SelectTrigger className="h-10 rounded-xl text-sm">
+                  <SelectValue placeholder="جميع العملات" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع العملات</SelectItem>
+                  {currencies?.map((c) => (
+                    <SelectItem key={c.id} value={c.code}>
+                      {c.name} ({c.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       </div>

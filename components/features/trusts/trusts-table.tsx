@@ -1,8 +1,9 @@
 "use client"
 
-import { useRef, useEffect } from "react"
-import { useTrusts, useUpdateTrust } from "@/lib/api/trusts"
-import type { Trust, TrustStatus } from "@/lib/api/types"
+import { useRef } from "react"
+import { useTrusts, useUpdateTrust } from "@/lib/api/hooks"
+import type { Trust } from "@/lib/api/generated/model"
+import type { StatusEnum } from "@/lib/api/generated/model"
 import {
   Table,
   TableBody,
@@ -18,44 +19,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
 import { StatusBadge } from "./status-badge"
-import { Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
-import gsap from "gsap"
 
 interface TrustsTableProps {
   filters: { status: string; currency: string; search: string }
   onEdit: (trust: Trust) => void
-  onDelete: (trust: Trust) => void
 }
 
-export function TrustsTable({ filters, onEdit, onDelete }: TrustsTableProps) {
+export function TrustsTable({ filters, onEdit }: TrustsTableProps) {
   const { data, isLoading, isError } = useTrusts(filters)
   const updateTrust = useUpdateTrust()
-  const rowsRef = useRef<HTMLTableSectionElement>(null)
+  const hasAnimated = useRef(false)
 
   const trusts: Trust[] = data?.results ?? []
 
-  useEffect(() => {
-    if (trusts.length > 0 && rowsRef.current) {
-      const rows = rowsRef.current.querySelectorAll("tr")
-      gsap.fromTo(
-        rows,
-        { opacity: 0, x: -10 },
-        {
-          opacity: 1,
-          x: 0,
-          duration: 0.3,
-          stagger: 0.04,
-          ease: "power2.out",
-        }
-      )
-    }
-  }, [trusts])
+  // Only animate on first data load
+  const shouldAnimate = !hasAnimated.current && trusts.length > 0
+  if (trusts.length > 0) {
+    hasAnimated.current = true
+  }
 
-  async function handleStatusChange(trust: Trust, newStatus: TrustStatus) {
+  async function handleStatusChange(trust: Trust, newStatus: StatusEnum) {
     try {
       await updateTrust.mutateAsync({
         id: trust.id,
@@ -92,11 +77,15 @@ export function TrustsTable({ filters, onEdit, onDelete }: TrustsTableProps) {
     return (
       <div className="flex flex-col gap-3">
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="flex gap-4 p-4 rounded-2xl border border-border">
-            <Skeleton className="h-5 w-24" />
-            <Skeleton className="h-5 w-20" />
-            <Skeleton className="h-5 w-16" />
-            <Skeleton className="h-5 w-16" />
+          <div
+            key={i}
+            className="flex gap-4 p-4 rounded-2xl border border-border/50"
+            style={{ animationDelay: `${i * 80}ms` }}
+          >
+            <div className="h-5 w-28 rounded-lg skeleton-shimmer" />
+            <div className="h-5 w-20 rounded-lg skeleton-shimmer" />
+            <div className="h-5 w-16 rounded-lg skeleton-shimmer" />
+            <div className="h-5 w-16 rounded-lg skeleton-shimmer" />
           </div>
         ))}
       </div>
@@ -105,7 +94,7 @@ export function TrustsTable({ filters, onEdit, onDelete }: TrustsTableProps) {
 
   if (isError) {
     return (
-      <div className="rounded-2xl bg-destructive/10 p-6 text-center text-sm text-destructive">
+      <div className="rounded-2xl bg-destructive/10 border border-destructive/20 p-6 text-center text-sm text-destructive">
         فشل في تحميل الأمانات
       </div>
     )
@@ -113,10 +102,10 @@ export function TrustsTable({ filters, onEdit, onDelete }: TrustsTableProps) {
 
   if (trusts.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-border border-dashed p-12 text-center">
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-border/50 border-dashed p-12 text-center animate-fade-up">
+        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/70">
           <svg
-            className="h-8 w-8 text-muted-foreground"
+            className="h-8 w-8 text-muted-foreground/60"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -142,30 +131,44 @@ export function TrustsTable({ filters, onEdit, onDelete }: TrustsTableProps) {
   return (
     <>
       {/* Desktop Table */}
-      <div className="hidden md:block rounded-2xl border border-border overflow-hidden">
+      <div className="hidden md:block rounded-2xl border border-border/50 overflow-hidden shadow-sm">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50 hover:bg-muted/50">
-              <TableHead className="text-right font-semibold">اسم الشخص</TableHead>
-              <TableHead className="text-right font-semibold">المبلغ</TableHead>
-              <TableHead className="text-right font-semibold">العملة</TableHead>
-              <TableHead className="text-right font-semibold">الحالة</TableHead>
-              <TableHead className="text-right font-semibold">تاريخ الإضافة</TableHead>
-              <TableHead className="text-right font-semibold">إجراءات</TableHead>
+            <TableRow className="bg-muted/40 hover:bg-muted/40">
+              <TableHead className="font-semibold">التاريخ</TableHead>
+              <TableHead className="font-semibold">اسم الشخص</TableHead>
+              <TableHead className="font-semibold">رقم الهاتف</TableHead>
+              <TableHead className="font-semibold">المبلغ</TableHead>
+              <TableHead className="font-semibold">العملة</TableHead>
+              <TableHead className="font-semibold">الحالة</TableHead>
+              <TableHead className="font-semibold">ملاحظات</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody ref={rowsRef}>
-            {trusts.map((trust) => (
-              <TableRow key={trust.id} className="group">
+          <TableBody>
+            {trusts.map((trust, index) => (
+              <TableRow
+                key={trust.id}
+                className="group hover:bg-muted/30 transition-colors cursor-pointer"
+                onClick={() => onEdit(trust)}
+                style={
+                  shouldAnimate
+                    ? {
+                        animation: "slide-in-right 0.3s ease-out both",
+                        animationDelay: `${index * 40}ms`,
+                      }
+                    : undefined
+                }
+              >
+                <TableCell className="text-muted-foreground text-sm">
+                  {formatDate(trust.created_at)}
+                </TableCell>
                 <TableCell className="font-medium">
                   {trust.person.name}
-                  {trust.person.phone && (
-                    <span className="text-xs text-muted-foreground mr-2" dir="ltr">
-                      {trust.person.phone}
-                    </span>
-                  )}
                 </TableCell>
-                <TableCell className="tabular-nums" dir="ltr">
+                <TableCell className="text-sm text-muted-foreground">
+                  {trust.person.phone || "—"}
+                </TableCell>
+                <TableCell className="tabular-nums font-medium">
                   {formatAmount(trust.amount)}
                 </TableCell>
                 <TableCell>{trust.currency.code}</TableCell>
@@ -173,10 +176,13 @@ export function TrustsTable({ filters, onEdit, onDelete }: TrustsTableProps) {
                   <Select
                     value={trust.status}
                     onValueChange={(v) =>
-                      handleStatusChange(trust, v as TrustStatus)
+                      handleStatusChange(trust, v as StatusEnum)
                     }
                   >
-                    <SelectTrigger className="w-28 h-8 rounded-lg border-0 bg-transparent p-0 hover:bg-muted/50">
+                    <SelectTrigger
+                      className="w-28 h-8 rounded-lg border-0 bg-transparent p-0 hover:bg-muted/50"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <StatusBadge status={trust.status} />
                     </SelectTrigger>
                     <SelectContent>
@@ -187,30 +193,12 @@ export function TrustsTable({ filters, onEdit, onDelete }: TrustsTableProps) {
                     </SelectContent>
                   </Select>
                 </TableCell>
-                <TableCell className="text-muted-foreground text-sm">
-                  {formatDate(trust.created_at)}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 rounded-lg"
-                      onClick={() => onEdit(trust)}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                      <span className="sr-only">تعديل</span>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 rounded-lg text-destructive hover:text-destructive"
-                      onClick={() => onDelete(trust)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      <span className="sr-only">حذف</span>
-                    </Button>
-                  </div>
+                <TableCell className="text-sm text-muted-foreground max-w-[200px]">
+                  {trust.notes
+                    ? trust.notes.length > 50
+                      ? `${trust.notes.slice(0, 50)}...`
+                      : trust.notes
+                    : "—"}
                 </TableCell>
               </TableRow>
             ))}
@@ -220,55 +208,54 @@ export function TrustsTable({ filters, onEdit, onDelete }: TrustsTableProps) {
 
       {/* Mobile Cards */}
       <div className="md:hidden flex flex-col gap-3">
-        {trusts.map((trust) => (
+        {trusts.map((trust, index) => (
           <div
             key={trust.id}
-            className="rounded-2xl border border-border bg-card p-4 shadow-sm"
+            onClick={() => onEdit(trust)}
+            className="rounded-2xl border border-border/50 bg-card p-4 shadow-sm cursor-pointer hover:border-primary/30 hover:shadow-md transition-all duration-200"
+            style={
+              shouldAnimate
+                ? {
+                    animation: "fade-up 0.4s ease-out both",
+                    animationDelay: `${index * 50}ms`,
+                  }
+                : undefined
+            }
           >
             <div className="flex items-start justify-between mb-3">
               <div>
-                <p className="font-semibold text-card-foreground">
-                  {trust.person.name}
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs text-muted-foreground">
                   {formatDate(trust.created_at)}
                 </p>
+                <p className="font-semibold text-card-foreground mt-0.5">
+                  {trust.person.name}
+                </p>
+                {trust.person.phone && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {trust.person.phone}
+                  </p>
+                )}
               </div>
               <StatusBadge status={trust.status} />
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span
-                  className="text-lg font-bold text-card-foreground tabular-nums"
-                  dir="ltr"
-                >
-                  {formatAmount(trust.amount)}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {trust.currency.code}
-                </span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 rounded-xl"
-                  onClick={() => onEdit(trust)}
-                >
-                  <Pencil className="h-4 w-4" />
-                  <span className="sr-only">تعديل</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 rounded-xl text-destructive hover:text-destructive"
-                  onClick={() => onDelete(trust)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  <span className="sr-only">حذف</span>
-                </Button>
-              </div>
+            <div className="flex items-center gap-2">
+              <span
+                className="text-lg font-bold text-card-foreground tabular-nums"
+                dir="ltr"
+              >
+                {formatAmount(trust.amount)}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {trust.currency.code}
+              </span>
             </div>
+            {trust.notes && (
+              <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                {trust.notes.length > 50
+                  ? `${trust.notes.slice(0, 50)}...`
+                  : trust.notes}
+              </p>
+            )}
           </div>
         ))}
       </div>

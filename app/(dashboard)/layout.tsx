@@ -5,7 +5,7 @@ import { QueryProvider } from "@/providers/query-provider"
 import { DesktopSidebar } from "@/components/layout/desktop-sidebar"
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav"
 import { MobileHeader } from "@/components/layout/mobile-header"
-import { Loader2 } from "lucide-react"
+import { Shield } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 
@@ -22,9 +22,14 @@ function DashboardGuard({ children }: { children: React.ReactNode }) {
   if (isLoading) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">جاري التحميل...</p>
+        <div className="flex flex-col items-center gap-4 animate-fade-up">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+            <Shield className="h-7 w-7 text-primary animate-pulse" />
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <div className="h-3 w-32 rounded-full skeleton-shimmer" />
+            <div className="h-2.5 w-20 rounded-full skeleton-shimmer" style={{ animationDelay: "200ms" }} />
+          </div>
         </div>
       </div>
     )
@@ -34,20 +39,15 @@ function DashboardGuard({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-dvh bg-background">
-      {/* Desktop Sidebar */}
       <DesktopSidebar />
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col min-h-dvh md:mr-64">
-        {/* Mobile Header */}
+      <main className="flex-1 flex flex-col min-h-dvh md:ms-64">
         <MobileHeader />
 
-        {/* Page Content */}
-        <div className="flex-1 p-4 pb-24 md:p-6 md:pb-6">
+        <div className="flex-1 p-4 pb-24 md:p-6 md:pb-6 animate-fade-in">
           {children}
         </div>
 
-        {/* Mobile Bottom Nav */}
         <MobileBottomNav />
       </main>
     </div>

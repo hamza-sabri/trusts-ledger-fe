@@ -8,12 +8,24 @@ import {
   useCallback,
 } from "react"
 import { useRouter } from "next/navigation"
-import type { LoginResponse } from "@/lib/api/types"
+import { verifyLoginTotp } from "@/lib/api/two-factor"
+
+interface LoginResponse {
+  access_token: string
+  token_type: string
+  expires_in: number
+}
+
+export type LoginResult =
+  | { type: "success" }
+  | { type: "requires_2fa"; temp_token: string }
+  | { type: "requires_2fa_setup"; detail: string }
 
 interface AuthContextType {
   token: string | null
   isLoading: boolean
-  login: (username: string, password: string) => Promise<void>
+  login: (username: string, password: string) => Promise<LoginResult>
+  loginWithTotp: (tempToken: string, totpCode: string) => Promise<void>
   logout: () => void
 }
 
@@ -34,32 +46,70 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false)
   }, [])
 
-  const login = useCallback(async (username: string, password: string) => {
-    const res = await fetch(`${API_BASE}/api/login/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    })
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => null)
-      throw new Error(
-        errorData?.detail ||
-        errorData?.non_field_errors?.[0] ||
-        errorData?.username?.[0] ||
-        errorData?.password?.[0] ||
-        "فشل تسجيل الدخول"
-      )
-    }
-    const data: LoginResponse = await res.json()
-    const jwt = data.access_token
-    if (!jwt) throw new Error("لم يتم استلام رمز المصادقة")
+  const completeLogin = useCallback(
+    (jwt: string, expiresIn: number) => {
+      const expiryDays = Math.max(1, Math.floor(expiresIn / 86400))
+      setCookie("auth_token", jwt, expiryDays)
+      setToken(jwt)
+      router.push("/dashboard")
+    },
+    [router]
+  )
 
-    // Calculate expiry days from expires_in (seconds)
-    const expiryDays = Math.max(1, Math.floor(data.expires_in / 86400))
-    setCookie("auth_token", jwt, expiryDays)
-    setToken(jwt)
-    router.push("/dashboard")
-  }, [router])
+  const login = useCallback(
+    async (username: string, password: string): Promise<LoginResult> => {
+      const res = await fetch(`${API_BASE}/api/login/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      })
+
+      // 403 = 2FA not configured yet
+      if (res.status === 403) {
+        const errorData = await res.json().catch(() => null)
+        return {
+          type: "requires_2fa_setup",
+          detail:
+            errorData?.detail ||
+            "يجب تفعيل المصادقة الثنائية قبل تسجيل الدخول",
+        }
+      }
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null)
+        throw new Error(
+          errorData?.detail ||
+            errorData?.non_field_errors?.[0] ||
+            errorData?.username?.[0] ||
+            errorData?.password?.[0] ||
+            "فشل تسجيل الدخول"
+        )
+      }
+
+      const data = await res.json()
+
+      // Check if 2FA verification is required (temp_token present, no access_token)
+      if (data.temp_token) {
+        return { type: "requires_2fa", temp_token: data.temp_token }
+      }
+
+      // Normal login — store token and redirect
+      const jwt = (data as LoginResponse).access_token
+      if (!jwt) throw new Error("لم يتم استلام رمز المصادقة")
+
+      completeLogin(jwt, data.expires_in)
+      return { type: "success" }
+    },
+    [completeLogin]
+  )
+
+  const loginWithTotp = useCallback(
+    async (tempToken: string, totpCode: string) => {
+      const data = await verifyLoginTotp(tempToken, totpCode)
+      completeLogin(data.access_token, data.expires_in)
+    },
+    [completeLogin]
+  )
 
   const logout = useCallback(() => {
     removeCookie("auth_token")
@@ -68,7 +118,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router])
 
   return (
-    <AuthContext.Provider value={{ token, isLoading, login, logout }}>
+    <AuthContext.Provider
+      value={{ token, isLoading, login, loginWithTotp, logout }}
+    >
       {children}
     </AuthContext.Provider>
   )

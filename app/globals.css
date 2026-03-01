@@ -38,14 +38,14 @@
   --sidebar-border: oklch(0.88 0.02 77.29);
   --sidebar-ring: oklch(0.52 0.13 144.33);
 
-  --shadow-2xs: 0 1px 3px 0px oklch(0.00 0 0 / 0.05);
-  --shadow-xs: 0 1px 3px 0px oklch(0.00 0 0 / 0.05);
-  --shadow-sm: 0 1px 3px 0px oklch(0.00 0 0 / 0.10), 0 1px 2px -1px oklch(0.00 0 0 / 0.10);
-  --shadow: 0 1px 3px 0px oklch(0.00 0 0 / 0.10), 0 1px 2px -1px oklch(0.00 0 0 / 0.10);
-  --shadow-md: 0 1px 3px 0px oklch(0.00 0 0 / 0.10), 0 2px 4px -1px oklch(0.00 0 0 / 0.10);
-  --shadow-lg: 0 1px 3px 0px oklch(0.00 0 0 / 0.10), 0 4px 6px -1px oklch(0.00 0 0 / 0.10);
-  --shadow-xl: 0 1px 3px 0px oklch(0.00 0 0 / 0.10), 0 8px 10px -1px oklch(0.00 0 0 / 0.10);
-  --shadow-2xl: 0 1px 3px 0px oklch(0.00 0 0 / 0.25);
+  --shadow-2xs: 0 1px 2px 0 oklch(0.00 0 0 / 0.03);
+  --shadow-xs: 0 1px 3px 0 oklch(0.00 0 0 / 0.04), 0 1px 2px -1px oklch(0.00 0 0 / 0.03);
+  --shadow-sm: 0 2px 4px -1px oklch(0.00 0 0 / 0.06), 0 1px 2px -1px oklch(0.00 0 0 / 0.04);
+  --shadow: 0 4px 6px -1px oklch(0.00 0 0 / 0.07), 0 2px 4px -2px oklch(0.00 0 0 / 0.05);
+  --shadow-md: 0 6px 10px -2px oklch(0.00 0 0 / 0.08), 0 3px 5px -2px oklch(0.00 0 0 / 0.05);
+  --shadow-lg: 0 10px 15px -3px oklch(0.00 0 0 / 0.08), 0 4px 6px -4px oklch(0.00 0 0 / 0.04);
+  --shadow-xl: 0 20px 25px -5px oklch(0.00 0 0 / 0.08), 0 8px 10px -6px oklch(0.00 0 0 / 0.04);
+  --shadow-2xl: 0 25px 50px -12px oklch(0.00 0 0 / 0.20);
 }
 
 .dark {
@@ -82,14 +82,14 @@
   --sidebar-border: oklch(0.39 0.03 143.09);
   --sidebar-ring: oklch(0.67 0.16 144.06);
 
-  --shadow-2xs: 0 1px 3px 0px oklch(0.00 0 0 / 0.05);
-  --shadow-xs: 0 1px 3px 0px oklch(0.00 0 0 / 0.05);
-  --shadow-sm: 0 1px 3px 0px oklch(0.00 0 0 / 0.10), 0 1px 2px -1px oklch(0.00 0 0 / 0.10);
-  --shadow: 0 1px 3px 0px oklch(0.00 0 0 / 0.10), 0 1px 2px -1px oklch(0.00 0 0 / 0.10);
-  --shadow-md: 0 1px 3px 0px oklch(0.00 0 0 / 0.10), 0 2px 4px -1px oklch(0.00 0 0 / 0.10);
-  --shadow-lg: 0 1px 3px 0px oklch(0.00 0 0 / 0.10), 0 4px 6px -1px oklch(0.00 0 0 / 0.10);
-  --shadow-xl: 0 1px 3px 0px oklch(0.00 0 0 / 0.10), 0 8px 10px -1px oklch(0.00 0 0 / 0.10);
-  --shadow-2xl: 0 1px 3px 0px oklch(0.00 0 0 / 0.25);
+  --shadow-2xs: 0 1px 2px 0 oklch(0.00 0 0 / 0.08);
+  --shadow-xs: 0 1px 3px 0 oklch(0.00 0 0 / 0.12), 0 1px 2px -1px oklch(0.00 0 0 / 0.08);
+  --shadow-sm: 0 2px 4px -1px oklch(0.00 0 0 / 0.15), 0 1px 2px -1px oklch(0.00 0 0 / 0.10);
+  --shadow: 0 4px 6px -1px oklch(0.00 0 0 / 0.15), 0 2px 4px -2px oklch(0.00 0 0 / 0.10);
+  --shadow-md: 0 6px 10px -2px oklch(0.00 0 0 / 0.18), 0 3px 5px -2px oklch(0.00 0 0 / 0.12);
+  --shadow-lg: 0 10px 15px -3px oklch(0.00 0 0 / 0.20), 0 4px 6px -4px oklch(0.00 0 0 / 0.10);
+  --shadow-xl: 0 20px 25px -5px oklch(0.00 0 0 / 0.20), 0 8px 10px -6px oklch(0.00 0 0 / 0.10);
+  --shadow-2xl: 0 25px 50px -12px oklch(0.00 0 0 / 0.35);
 }
 
 @theme inline {
@@ -152,6 +152,46 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Color scheme */
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+
+  /* Better focus-visible rings */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+
+  /* Interactive element transitions */
+  button, a, input, select, textarea, [role="button"] {
+    @apply transition-colors duration-150;
+  }
+}
+
+/* Custom scrollbar */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.52 0.13 144.33 / 0.3) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: oklch(0.52 0.13 144.33 / 0.25);
+    border-radius: 9999px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.52 0.13 144.33 / 0.45);
+  }
 }
 
 .safe-area-pb {
@@ -161,4 +201,94 @@
 /* RTL adjustments for select and dialog */
 [dir="rtl"] [data-radix-popper-content-wrapper] {
   text-align: right;
+}
+
+/* Custom keyframes for mount animations */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.5s ease-out both;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out both;
+}
+
+.animate-scale-fade-in {
+  animation: scale-fade-in 0.3s ease-out both;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out both;
+}
+
+/* Shimmer skeleton effect */
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 25%,
+    oklch(0.90 0.01 72.65) 50%,
+    var(--muted) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+.dark .skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 25%,
+    oklch(0.34 0.03 148.55) 50%,
+    var(--muted) 75%
+  );
+  background-size: 200% 100%;
+}
+
+/* Dot grid pattern for cards */
+.dot-grid {
+  background-image: radial-gradient(oklch(0.52 0.13 144.33 / 0.06) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+.dark .dot-grid {
+  background-image: radial-gradient(oklch(0.67 0.16 144.06 / 0.08) 1px, transparent 1px);
 }

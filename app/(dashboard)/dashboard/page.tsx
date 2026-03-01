@@ -1,8 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import type { Trust } from "@/lib/api/types"
-import { SummaryCards } from "@/components/features/trusts/summary-cards"
+import type { Trust } from "@/lib/api/generated/model"
 import { TrustsTable } from "@/components/features/trusts/trusts-table"
 import { FiltersPanel } from "@/components/features/trusts/filters-panel"
 import { TrustFormModal } from "@/components/features/trusts/trust-form-modal"
@@ -41,7 +40,9 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">لوحة التحكم</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            مرحباً بك
+          </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             إدارة ومتابعة الأمانات المالية
           </p>
@@ -51,15 +52,12 @@ export default function DashboardPage() {
             setEditTrust(null)
             setFormOpen(true)
           }}
-          className="h-11 rounded-xl gap-2 font-semibold mt-3 sm:mt-0"
+          className="h-11 rounded-xl gap-2 font-semibold mt-3 sm:mt-0 shadow-sm"
         >
           <Plus className="h-4 w-4" />
           إضافة أمانة جديدة
         </Button>
       </div>
-
-      {/* Summary Cards */}
-      <SummaryCards />
 
       {/* Filters */}
       <FiltersPanel filters={filters} onFiltersChange={setFilters} />
@@ -68,7 +66,6 @@ export default function DashboardPage() {
       <TrustsTable
         filters={filters}
         onEdit={handleEdit}
-        onDelete={handleDelete}
       />
 
       {/* Modals */}
@@ -76,6 +73,7 @@ export default function DashboardPage() {
         open={formOpen}
         onOpenChange={handleFormClose}
         trust={editTrust}
+        onDelete={handleDelete}
       />
       <DeleteConfirmModal
         open={deleteOpen}

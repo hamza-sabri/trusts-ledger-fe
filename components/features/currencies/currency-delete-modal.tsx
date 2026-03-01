@@ -1,7 +1,7 @@
 "use client"
 
-import { useDeleteTrust } from "@/lib/api/hooks"
-import type { Trust } from "@/lib/api/generated/model"
+import { useDeleteCurrency } from "@/lib/api/hooks"
+import type { Currency } from "@/lib/api/generated/model"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,27 +15,27 @@ import {
 import { Loader2, TriangleAlert } from "lucide-react"
 import { toast } from "sonner"
 
-interface DeleteConfirmModalProps {
+interface CurrencyDeleteModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  trust: Trust | null
+  currency: Currency | null
 }
 
-export function DeleteConfirmModal({
+export function CurrencyDeleteModal({
   open,
   onOpenChange,
-  trust,
-}: DeleteConfirmModalProps) {
-  const deleteTrust = useDeleteTrust()
+  currency,
+}: CurrencyDeleteModalProps) {
+  const deleteCurrency = useDeleteCurrency()
 
   async function handleDelete() {
-    if (!trust) return
+    if (!currency) return
     try {
-      await deleteTrust.mutateAsync(trust.id)
-      toast.success("تم حذف الأمانة بنجاح")
+      await deleteCurrency.mutateAsync(currency.id)
+      toast.success("تم حذف العملة بنجاح")
       onOpenChange(false)
     } catch {
-      toast.error("فشل حذف الأمانة")
+      toast.error("فشل حذف العملة")
     }
   }
 
@@ -46,11 +46,11 @@ export function DeleteConfirmModal({
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10 mb-2">
             <TriangleAlert className="h-6 w-6 text-destructive" />
           </div>
-          <AlertDialogTitle className="text-lg">حذف الأمانة</AlertDialogTitle>
+          <AlertDialogTitle className="text-lg">حذف العملة</AlertDialogTitle>
           <AlertDialogDescription className="text-sm leading-relaxed">
-            {"هل أنت متأكد من حذف أمانة"}{" "}
+            {"هل أنت متأكد من حذف العملة"}{" "}
             <span className="font-semibold text-foreground">
-              {trust?.person.name}
+              {currency?.name} ({currency?.code})
             </span>
             {"؟"} {"لا يمكن التراجع عن هذا الإجراء."}
           </AlertDialogDescription>
@@ -58,10 +58,10 @@ export function DeleteConfirmModal({
         <AlertDialogFooter className="flex-row-reverse gap-2 sm:flex-row-reverse">
           <AlertDialogAction
             onClick={handleDelete}
-            disabled={deleteTrust.isPending}
+            disabled={deleteCurrency.isPending}
             className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {deleteTrust.isPending ? (
+            {deleteCurrency.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin ms-2" />
             ) : null}
             نعم، حذف
