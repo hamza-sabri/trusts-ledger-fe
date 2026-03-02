@@ -320,6 +320,7 @@ export function TrustFormModal({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">نشط</SelectItem>
+                <SelectItem value="delivered">تم التسليم</SelectItem>
                 <SelectItem value="returned">مُرجع</SelectItem>
                 <SelectItem value="pending">معلّق</SelectItem>
                 <SelectItem value="cancelled">ملغي</SelectItem>

@@ -47,9 +47,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const completeLogin = useCallback(
-    (jwt: string, expiresIn: number) => {
-      const expiryDays = Math.max(1, Math.floor(expiresIn / 86400))
-      setCookie("auth_token", jwt, expiryDays)
+    (jwt: string, _expiresIn: number) => {
+      setCookie("auth_token", jwt, 180)
       setToken(jwt)
       router.push("/dashboard")
     },

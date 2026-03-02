@@ -427,6 +427,7 @@ function HistoryEntry({
     returned: "مُرجع",
     pending: "معلّق",
     cancelled: "ملغي",
+    delivered: "تم التسليم",
   }
 
   return (

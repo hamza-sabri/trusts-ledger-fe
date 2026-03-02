@@ -24,4 +24,5 @@ export const StatusEnum = {
   returned: 'returned',
   pending: 'pending',
   cancelled: 'cancelled',
+  delivered: 'delivered',
 } as const;

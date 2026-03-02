@@ -18,4 +18,5 @@ export const TrustsHistoryListStatus = {
   cancelled: 'cancelled',
   pending: 'pending',
   returned: 'returned',
+  delivered: 'delivered',
 } as const;

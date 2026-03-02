@@ -3,7 +3,7 @@
 import { useTrusts } from "@/lib/api/hooks"
 import { CurrencyDonutChart } from "@/components/features/trusts/currency-chart"
 import { Card, CardContent } from "@/components/ui/card"
-import { TrendingUp, Coins, CheckCircle2, Clock, XCircle, RotateCcw } from "lucide-react"
+import { TrendingUp, Coins, CheckCircle2, Clock, XCircle, RotateCcw, PackageCheck } from "lucide-react"
 import { useMemo } from "react"
 
 export default function StatsPage() {
@@ -37,6 +37,7 @@ export default function StatsPage() {
   const pendingTrusts = trusts.filter((t) => t.status === "pending").length
   const returnedTrusts = trusts.filter((t) => t.status === "returned").length
   const cancelledTrusts = trusts.filter((t) => t.status === "cancelled").length
+  const deliveredTrusts = trusts.filter((t) => t.status === "delivered").length
 
   const stats = [
     {
@@ -80,6 +81,13 @@ export default function StatsPage() {
       icon: XCircle,
       iconBg: "bg-red-500/10",
       iconColor: "text-red-600 dark:text-red-400",
+    },
+    {
+      label: "تم التسليم",
+      value: deliveredTrusts,
+      icon: PackageCheck,
+      iconBg: "bg-purple-500/10",
+      iconColor: "text-purple-600 dark:text-purple-400",
     },
   ]
 

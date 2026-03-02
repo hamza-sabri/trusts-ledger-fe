@@ -30,6 +30,11 @@ const statusConfig: Record<
     className: "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/25",
     dotColor: "bg-red-500",
   },
+  delivered: {
+    label: "تم التسليم",
+    className: "bg-purple-500/15 text-purple-700 dark:text-purple-400 border-purple-500/25",
+    dotColor: "bg-purple-500",
+  },
 }
 
 export function StatusBadge({ status }: { status: TrustStatus }) {

@@ -109,6 +109,7 @@ export function FiltersPanel({ filters, onFiltersChange }: FiltersPanelProps) {
                 <SelectContent>
                   <SelectItem value="all">جميع الحالات</SelectItem>
                   <SelectItem value="active">نشط</SelectItem>
+                  <SelectItem value="delivered">تم التسليم</SelectItem>
                   <SelectItem value="returned">مُرجع</SelectItem>
                   <SelectItem value="pending">معلّق</SelectItem>
                   <SelectItem value="cancelled">ملغي</SelectItem>
