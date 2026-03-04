@@ -262,7 +262,7 @@ export default function LoginPage() {
               </form>
 
               <p className="mt-4 text-center text-xs text-muted-foreground">
-                أو أدخل رمز احتياطي مكوّن من 8 أحرف
+                أو أدخل رمز احتياطي مكوّن من 6 أحرف
               </p>
 
               <button

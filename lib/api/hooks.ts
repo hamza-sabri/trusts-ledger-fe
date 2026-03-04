@@ -109,7 +109,7 @@ interface TrustFilters {
 export function useTrusts(filters: TrustFilters = {}) {
   const params: Record<string, unknown> = {}
   if (filters.status) params.status = filters.status as StatusEnum
-  if (filters.currency) params.currency = filters.currency
+  if (filters.currency) params.currency = Number(filters.currency)
   if (filters.search) params.search = filters.search
   if (filters.page) params.page = filters.page
   if (filters.person) params.person = filters.person

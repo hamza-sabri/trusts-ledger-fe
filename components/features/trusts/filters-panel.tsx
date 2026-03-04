@@ -130,7 +130,7 @@ export function FiltersPanel({ filters, onFiltersChange }: FiltersPanelProps) {
                 <SelectContent>
                   <SelectItem value="all">جميع العملات</SelectItem>
                   {currencies?.map((c) => (
-                    <SelectItem key={c.id} value={c.code}>
+                    <SelectItem key={c.id} value={String(c.id)}>
                       {c.name} ({c.code})
                     </SelectItem>
                   ))}
